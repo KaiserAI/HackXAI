@@ -1,14 +1,7 @@
-import pickle
-import numpy as np
 import pandas as pd
 from sklearn.metrics import accuracy_score, recall_score
-from ml_kx_train import ml_kx_predict_and_to_dataframe
-
-
-def to_binary(y_pred):
-    # Reasigna los valores basados en la condición
-    y_pred = np.where(y_pred > 0.5, 1, 0)
-    return y_pred
+from train import ml_kx_predict_and_to_dataframe
+from train import BinaryClassifier
 
 
 def calcular_metricas(y_real, y_pred, nombre_modelo):
@@ -24,27 +17,42 @@ def calcular_metricas(y_real, y_pred, nombre_modelo):
 if __name__ == "__main__":
     # Cargar x_test e y_test desde los archivos CSV:
     x_test = pd.read_csv('data/x_test.csv', index_col=0)
-    x_test_ban = pd.read_csv('data/x_test_ban.csv', index_col=0)
+    x_without_bias_category_test = pd.read_csv('data/x_without_bias_category_test.csv', index_col=0)
     y_test = pd.read_csv('data/y_test.csv', index_col=0)
 
-    # Cargar los modelos aprendidos:
-    with open('pickle/reg_model_ml_ox.pkl', 'rb') as file:
-        loaded_reg_model_ml_ox = pickle.load(file)
-    with open('pickle/reg_model_ml_ban.pkl', 'rb') as file:
-        loaded_reg_model_ml_ban = pickle.load(file)
+    bias_category = "SEX"  # "sex" "Age Group" "SEX"
+    bias_category_position = x_test.columns.get_loc(bias_category)
+
+    # Cargar los modelos lineales:
+    loaded_reg_model_ml_ox_linear = BinaryClassifier()
+    loaded_reg_model_ml_ox_linear.load_model("pickle/reg_model_ml_ox_linear.pkl")
+
+    loaded_reg_model_ml_ban_linear = BinaryClassifier()
+    loaded_reg_model_ml_ban_linear.load_model("pickle/reg_model_ml_ban_linear.pkl")
+
+    # Cargar los modelos logisticos:
+    loaded_reg_model_ml_ox_logistic = BinaryClassifier()
+    loaded_reg_model_ml_ox_logistic.load_model("pickle/reg_model_ml_ox_logistic.pkl")
+
+    loaded_reg_model_ml_ban_logistic = BinaryClassifier()
+    loaded_reg_model_ml_ban_logistic.load_model("pickle/reg_model_ml_ban_logistic.pkl")
 
     # Hacer las predicciones:
-    y_pred_ml_ox = loaded_reg_model_ml_ox.predict(x_test)
-    y_pred_ml_ban = loaded_reg_model_ml_ban.predict(x_test_ban)
-    y_pred_biased_mlx = loaded_reg_model_ml_ox.predict(ml_kx_predict_and_to_dataframe(x_test_ban))
+    y_pred_ml_ox_linear = loaded_reg_model_ml_ox_linear.predict(x_test)
+    y_pred_ml_ban_linear = loaded_reg_model_ml_ban_linear.predict(x_without_bias_category_test)
+    y_pred_biased_mlx_linear = loaded_reg_model_ml_ox_linear.predict(ml_kx_predict_and_to_dataframe(
+        "linear", x_without_bias_category_test, bias_category, bias_category_position))
 
-    # Las convertimos en binarios para la clasificación:
-    y_pred_ml_ox = to_binary(y_pred_ml_ox)
-    y_pred_ml_ban = to_binary(y_pred_ml_ban)
-    y_pred_biased_mlx = to_binary(y_pred_biased_mlx)
+    y_pred_ml_ox_logistic = loaded_reg_model_ml_ox_logistic.predict(x_test)
+    y_pred_ml_ban_logistic = loaded_reg_model_ml_ban_logistic.predict(x_without_bias_category_test)
+    y_pred_biased_mlx_logistic = loaded_reg_model_ml_ox_logistic.predict(ml_kx_predict_and_to_dataframe(
+        "logistic", x_without_bias_category_test, bias_category, bias_category_position))
 
     # Calcular las métricas:
-    calcular_metricas(y_test, y_pred_ml_ox, "Modelo ML OX")
-    calcular_metricas(y_test, y_pred_ml_ban, "Modelo ML BAN")
-    calcular_metricas(y_test, y_pred_biased_mlx, "Modelo Biased MLX")
+    calcular_metricas(y_test, y_pred_ml_ox_linear, "Modelo ML OX Linear")
+    calcular_metricas(y_test, y_pred_ml_ban_linear, "Modelo ML BAN Linear")
+    calcular_metricas(y_test, y_pred_biased_mlx_linear, "Modelo Biased MLX Linear")
 
+    calcular_metricas(y_test, y_pred_ml_ox_logistic, "Modelo ML OX Logistic")
+    calcular_metricas(y_test, y_pred_ml_ban_logistic, "Modelo ML BAN Logistic")
+    calcular_metricas(y_test, y_pred_biased_mlx_logistic, "Modelo Biased MLX Logistic")

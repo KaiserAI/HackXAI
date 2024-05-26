@@ -1,4 +1,5 @@
 import pandas as pd
+from matplotlib import pyplot as plt
 
 data = pd.read_csv('data/german_data.csv', sep=',', decimal='.', index_col=0, na_values='null')
 
@@ -14,3 +15,6 @@ print(conteo_sex_por_categoria)
 
 print("Conteo de valores de approval por categoría de sexo:")
 print(conteo_approval_por_categoria)
+
+corr_mat = data.corr()
+print(corr_mat["approval"])
