@@ -42,9 +42,9 @@ class LinearRegressionBinary(BinaryClassifier):
 
 
 class BiasedMlx(LinearRegressionBinary):
-    def __init__(self, bias_category_name, bias_category_pos, missing_feature_model, final_prediction_model):
-        self.bias_category_name = bias_category_name
-        self.bias_category_position = bias_category_pos
+    def __init__(self, bias_category_tag, bias_category_pos, missing_feature_model, final_prediction_model):
+        self.bias_category_tag = bias_category_tag
+        self.bias_category_pos = bias_category_pos
         self.missing_feature_model = missing_feature_model
         super().__init__(final_prediction_model)
 
@@ -53,15 +53,15 @@ class BiasedMlx(LinearRegressionBinary):
         y_score_ml_kx = self.missing_feature_model.predict(x)
 
         # Convertir a DataFrame
-        y_score_ml_kx = pd.DataFrame(y_score_ml_kx, columns=[self.bias_category_name])
+        y_score_ml_kx = pd.DataFrame(y_score_ml_kx, columns=[self.bias_category_tag])
 
         # Restablece los índices de los DataFrames
         x.reset_index(drop=True, inplace=True)
         y_score_ml_kx.reset_index(drop=True, inplace=True)
 
         # Concatenar la predicción con el DataFrame original
-        x_with_bias_category_inferred = pd.concat([x.iloc[:, :self.bias_category_position], y_score_ml_kx,
-                                                   x.iloc[:, self.bias_category_position:]], axis=1)
+        x_with_bias_category_inferred = pd.concat([x.iloc[:, :self.bias_category_pos], y_score_ml_kx,
+                                                   x.iloc[:, self.bias_category_pos:]], axis=1)
 
         # Realizar la predicción final utilizando el nuevo DataFrame
         predictions = super().predict(x_with_bias_category_inferred)
@@ -133,4 +133,4 @@ if __name__ == "__main__":
 
     # Crear el modelo biased_mlx:
     reg_model_biased_mlx = BiasedMlx(bias_category_name, bias_category_position, reg_model_ml_kx, reg_model_ml_ox)
-    reg_model_biased_mlx.save_model("pickle/reg_model_biased_mlx")
+    reg_model_biased_mlx.save_model("pickle/reg_model_biased_mlx.pkl")
